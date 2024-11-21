@@ -19,7 +19,7 @@ const agenda = require("./middlewares/agenda");
 
 const PORT = process.env.PORT || 3000;
 const mongoURi =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/scoutpro";
+  process.env.MONGODB_URI ;
 
 const secret = "thisisnotagoodsecret";
 const store = new MongoDBStore({

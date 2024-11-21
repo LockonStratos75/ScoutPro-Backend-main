@@ -9,6 +9,9 @@ const path = require("path");
 const csv = require("csv-parser");
 const generateTemplate = require("../middlewares/template");
 
+
+const chromium = require("chromium");
+
 // Helper Functions
 function sanitizeData(data) {
   return data.map((row) => {
@@ -216,35 +219,36 @@ const generatePdf = async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: ["--no-sandbox", "--disable-setuid-sandbox"], // Required for Render
+      headless: true, // Ensure headless mode
     });
+
     const page = await browser.newPage();
-    await page.setContent(htmlTemplate, { waitUntil: "load" });
+    await page.setContent(htmlTemplate, { waitUntil: "networkidle2" });
 
     const filePath = path.join(__dirname, `ScoutPro-${player.playerName}.pdf`);
 
     await page.pdf({
       path: filePath,
-      width: "640px",
-      height: "852px",
+      format: "A4", // Use standard size
       printBackground: true,
     });
 
     await browser.close();
 
-    const fileBuffer = await fsp.readFile(filePath);
+    // Stream the PDF directly
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=ScoutPro-${player.playerName}.pdf`
+    );
+    res.sendFile(filePath);
 
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=ScoutPro-${player.playerName}.pdf`,
-      "Content-Length": fileBuffer.length,
-    });
-    res.status(200).send(fileBuffer);
-
+    // Clean up after sending
     await fsp.unlink(filePath);
   } catch (error) {
     console.error("Error generating PDF:", error.message || error);
-    res.status(500).send("Error generating PDF");
+    res.status(500).json({ error: "Error generating PDF" });
   }
 };
 
