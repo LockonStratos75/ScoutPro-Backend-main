@@ -1,16 +1,15 @@
 const mongoose = require("mongoose");
 const Coach = mongoose.model("Coach");
 const Player = mongoose.model("Player");
-const puppeteer = require("puppeteer");
-const fs = require("fs");
-const fsp = require("fs").promises;
+// const puppeteer = require("puppeteer-core");
+const PDFCrowd = require("pdfcrowd");
+const fs = require("fs").promises;
+// const fsp = require("fs").promises;
 const agenda = require("../middlewares/agenda");
 const path = require("path");
 const csv = require("csv-parser");
 const generateTemplate = require("../middlewares/template");
 
-
-const chromium = require("chromium");
 
 // Helper Functions
 function sanitizeData(data) {
@@ -218,36 +217,23 @@ const generatePdf = async (req, res) => {
   let htmlTemplate = await generateTemplate(player);
 
   try {
-    const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"], // Required for Render
-      headless: true, // Ensure headless mode
+    // Initialize the PDFCrowd client
+    const client = new PDFCrowd("demo", "ce544b6ea52a5621fb9d55f8b542d14d");
+
+    // Convert HTML to PDF
+    const pdfBuffer = await client.convertString(htmlTemplate);
+
+    // Set response headers
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename=ScoutPro-${player.playerName}.pdf`,
+      "Content-Length": pdfBuffer.length,
     });
 
-    const page = await browser.newPage();
-    await page.setContent(htmlTemplate, { waitUntil: "networkidle2" });
-
-    const filePath = path.join(__dirname, `ScoutPro-${player.playerName}.pdf`);
-
-    await page.pdf({
-      path: filePath,
-      format: "A4", // Use standard size
-      printBackground: true,
-    });
-
-    await browser.close();
-
-    // Stream the PDF directly
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=ScoutPro-${player.playerName}.pdf`
-    );
-    res.sendFile(filePath);
-
-    // Clean up after sending
-    await fsp.unlink(filePath);
+    // Send the PDF buffer
+    res.status(200).send(pdfBuffer);
   } catch (error) {
-    console.error("Error generating PDF:", error.message || error);
+    console.error("Error generating PDF with PDFCrowd:", error.message || error);
     res.status(500).json({ error: "Error generating PDF" });
   }
 };
