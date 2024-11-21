@@ -2,14 +2,16 @@ const mongoose = require("mongoose");
 const Coach = mongoose.model("Coach");
 const Player = mongoose.model("Player");
 // const puppeteer = require("puppeteer-core");
-const PDFCrowd = require("pdfcrowd");
 const fs = require("fs").promises;
+const pdf = require("html-pdf");
 // const fsp = require("fs").promises;
 const agenda = require("../middlewares/agenda");
 const path = require("path");
 const csv = require("csv-parser");
 const generateTemplate = require("../middlewares/template");
 
+
+// const chromium = require("chromium");
 
 // Helper Functions
 function sanitizeData(data) {
@@ -214,26 +216,55 @@ const generatePdf = async (req, res) => {
     return res.status(404).json({ error: "Unable to find player." });
   }
 
-  let htmlTemplate = await generateTemplate(player);
-
   try {
-    // Initialize the PDFCrowd client
-    const client = new PDFCrowd("demo", "ce544b6ea52a5621fb9d55f8b542d14d");
+    // Generate the HTML template
+    const htmlTemplate = await generateTemplate(player);
 
-    // Convert HTML to PDF
-    const pdfBuffer = await client.convertString(htmlTemplate);
+    // Define PDF options
+    const options = {
+      format: "A4",
+      border: {
+        top: "10mm",
+        right: "10mm",
+        bottom: "10mm",
+        left: "10mm",
+      },
+      // You can add more options as needed
+    };
 
-    // Set response headers
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=ScoutPro-${player.playerName}.pdf`,
-      "Content-Length": pdfBuffer.length,
+    // Define the file path
+    const fileName = `ScoutPro-${player.playerName}.pdf`;
+    const filePath = path.join(__dirname, fileName);
+
+    // Generate the PDF
+    pdf.create(htmlTemplate, options).toFile(filePath, async (err, result) => {
+      if (err) {
+        console.error("Error generating PDF:", err);
+        return res.status(500).json({ error: "Error generating PDF" });
+      }
+
+      // Set response headers to prompt download
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+          "Content-Disposition",
+          `attachment; filename=${fileName}`
+      );
+
+      // Stream the PDF file to the client
+      res.sendFile(filePath, async (err) => {
+        if (err) {
+          console.error("Error sending PDF:", err);
+        }
+        // Clean up by deleting the PDF file after sending
+        try {
+          await fs.unlink(filePath);
+        } catch (unlinkErr) {
+          console.error("Error deleting PDF file:", unlinkErr);
+        }
+      });
     });
-
-    // Send the PDF buffer
-    res.status(200).send(pdfBuffer);
   } catch (error) {
-    console.error("Error generating PDF with PDFCrowd:", error.message || error);
+    console.error("Error generating PDF:", error.message || error);
     res.status(500).json({ error: "Error generating PDF" });
   }
 };

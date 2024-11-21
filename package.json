@@ -13,7 +13,6 @@
     "agenda": "^5.0.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
-    "chromium": "^3.0.3",
     "cloudinary": "^1.41.3",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
@@ -31,7 +30,6 @@
     "pdfcrowd": "^6.3.0",
     "pdfkit": "^0.15.1",
     "puppeteer": "^23.7.1",
-    "puppeteer-core": "^23.9.0",
     "xlsx": "^0.18.5"
   }
 }
