@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Coach = mongoose.model("Coach");
 const Player = mongoose.model("Player");
-const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer");
 const fs = require("fs");
 const fsp = require("fs").promises;
 const agenda = require("../middlewares/agenda");
@@ -219,9 +219,8 @@ const generatePdf = async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
-      executablePath: chromium.path,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"], // Required for Render
+      headless: true, // Ensure headless mode
     });
 
     const page = await browser.newPage();
