@@ -36,7 +36,7 @@ const sessionConfig = {
 };
 
 const corsOptions = {
-  origin: process.env.DOMAIN_FRONTEND,
+  origin: "*",
   credentials: true,
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,Authorization",
